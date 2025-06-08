@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # 👈 Add this
 from datetime import datetime
 
 app = Flask(__name__)
+CORS(app)  # 👈 This allows ALL origins by default (for development)
 
 # Just for demo — store everything in a list
 locations = []
