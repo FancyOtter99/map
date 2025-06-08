@@ -53,8 +53,42 @@ def home():
 
 
 @app.route('/locations', methods=['GET'])
-def get_locations():
-    return jsonify(locations)
+def show_latest_map():
+    if not locations:
+        return "No locations received yet."
+
+    latest = locations[-1]
+    lat = latest.get("latitude", 0)
+    lon = latest.get("longitude", 0)
+
+    map_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Latest Location</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <style>#map {{ height: 100vh; }}</style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <script>
+            const lat = {lat};
+            const lon = {lon};
+            const map = L.map('map').setView([lat, lon], 15);
+            L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                attribution: '&copy; OpenStreetMap contributors'
+            }}).addTo(map);
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup('📍 Most Recent Location')
+                .openPopup();
+        </script>
+    </body>
+    </html>
+    """
+    return render_template_string(map_html)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
