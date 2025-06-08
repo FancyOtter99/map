@@ -39,7 +39,7 @@ def home():
     <html>
     <body>
       <h2>Test Location Post</h2>
-      <button onclick="fetch('http://100.115.92.197:5000/location', {
+      <button onclick="fetch('https://map-w4ew.onrender.com/location', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({latitude: 12.3456, longitude: 65.4321, timestamp: Date.now()})
