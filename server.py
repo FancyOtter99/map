@@ -30,6 +30,7 @@ def receive_location():
         'longitude': lon,
         'timestamp': timestamp
     }
+    locations.clear()
     locations.append(point)
 
     print(f"✅ Received location: {point}")
@@ -50,6 +51,11 @@ def home():
     </html>
     '''
 
+@app.route('/location_data')
+def latest_location_json():
+    if not locations:
+        return jsonify({'latitude': 0, 'longitude': 0})
+    return jsonify(locations[-1])
 
 
 @app.route('/locations', methods=['GET'])
@@ -62,32 +68,54 @@ def show_latest_map():
     lon = latest.get("longitude", 0)
 
     map_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Latest Location</title>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-        <style>#map {{ height: 100vh; }}</style>
-    </head>
-    <body>
-        <div id="map"></div>
-        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-        <script>
-            const lat = {lat};
-            const lon = {lon};
-            const map = L.map('map').setView([lat, lon], 15);
-            L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-                attribution: '&copy; OpenStreetMap contributors'
-            }}).addTo(map);
-            L.marker([lat, lon]).addTo(map)
-                .bindPopup('📍 Most Recent Location')
-                .openPopup();
-        </script>
-    </body>
-    </html>
-    """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Latest Location</title>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+            <style>#map {{ height: 100vh; }}</style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+            <script>
+                let map = L.map('map').setView([0, 0], 2);
+                L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                    attribution: '&copy; OpenStreetMap contributors'
+                }}).addTo(map);
+                let marker = null;
+        
+                async function fetchLatestLocation() {{
+                    try {{
+                        const res = await fetch('/location_data');
+                        const data = await res.json();
+                        const lat = parseFloat(data.latitude);
+                        const lon = parseFloat(data.longitude);
+        
+                        if (!isNaN(lat) && !isNaN(lon)) {{
+                            map.setView([lat, lon], 15);
+                            if (marker) {{
+                                marker.setLatLng([lat, lon]);
+                            }} else {{
+                                marker = L.marker([lat, lon]).addTo(map)
+                                    .bindPopup('📍 Most Recent Location')
+                                    .openPopup();
+                            }}
+                        }}
+                    }} catch (e) {{
+                        console.error("Failed to fetch location:", e);
+                    }}
+                }}
+        
+                setInterval(fetchLatestLocation, 5000);  // every 5 seconds
+                fetchLatestLocation();  // initial load
+            </script>
+        </body>
+        </html>
+        """
+
     return render_template_string(map_html)
 
 if __name__ == '__main__':
